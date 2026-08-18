@@ -46,7 +46,7 @@ const products: ProductTypes[] = [
     id: 4,
     name: "Leather Bag",
     price: 1999,
-    category: "bag",
+    category: "shirt",
     img: require("@/assets/images/shirt/shirt1.avif"),
   },
   {
