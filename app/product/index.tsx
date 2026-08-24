@@ -10,6 +10,8 @@ import {
   View,
 } from "react-native";
 
+import Ionicons from "@expo/vector-icons/Ionicons";
+
 export type ProductCategory = "all" | "watch" | "shirt" | "bag" | "glasses";
 
 type ProductTypes = {
@@ -87,12 +89,15 @@ export default function ProductScreen({
         keyExtractor={(item) => item.id.toString()}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Text style={[styles.emptyTitle, { color: textColor }]}>No products found</Text>
+            <Text style={[styles.emptyTitle, { color: textColor }]}>
+              No products found
+            </Text>
             <Text style={[styles.emptyText, { color: subtitleColor }]}>
               There are no items in this category yet.
             </Text>
           </View>
         }
+        contentContainerStyle={{ paddingBottom: 90 }}
         renderItem={({ item }) => (
           <Pressable
             style={({ pressed }) => [
@@ -105,18 +110,76 @@ export default function ProductScreen({
             ]}
             onPress={() => router.push(`/product/${item.id}`)}
           >
+            <Pressable
+              style={({ pressed }) => [
+                {
+                  position: "absolute",
+                  right: 10,
+                  top: 10,
+                  width: 36,
+                  height: 36,
+                  borderRadius: 18,
+                  backgroundColor: "#131313",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  zIndex: 1,
+                  transform: [{ scale: pressed ? 0.9 : 1 }],
+                },
+              ]}
+              onPress={(e) => {
+                e.stopPropagation(); // don't open product detail
+              }}
+            >
+              <Ionicons name="heart-outline" size={20} color="#FFFFFF" />
+            </Pressable>
             <Image source={item.img} style={styles.image} />
             <View style={styles.cardBody}>
-              <Text style={[styles.productName, { color: textColor }]} numberOfLines={1}>
+              <Text
+                style={[styles.productName, { color: textColor }]}
+                numberOfLines={1}
+              >
                 {item.name}
               </Text>
               <Text style={[styles.productPrice, { color: subtitleColor }]}>
                 ${item.price.toLocaleString()}
               </Text>
             </View>
+
+            <Pressable
+              style={({ pressed }) => [
+                {
+                  flexDirection: "row",
+                  gap: 10,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  backgroundColor: "#353535",
+                  paddingVertical: 10,
+                  borderRadius: 5,
+                  marginBottom: 20,
+                  marginHorizontal: 10,
+                  opacity: pressed ? 0.7 : 1,
+                  transform: [{ scale: pressed ? 0.9 : 1 }],
+                },
+              ]}
+            >
+              <Ionicons name="cart-outline" style={{ color: "#B7C4FF" }} />
+              <Text style={{ color: "#B7C4FF" }}>Add to cart</Text>
+            </Pressable>
           </Pressable>
         )}
       />
+      <Pressable
+        style={({ pressed }) => [
+          styles.fab,
+          {
+            opacity: pressed ? 0.85 : 1,
+            transform: [{ scale: pressed ? 0.95 : 1 }],
+          },
+        ]}
+        onPress={() => router.push("/product/createproduct/CreateProduct")}
+      >
+        <Ionicons name="add" size={28} color="#FFFFFF" />
+      </Pressable>
     </View>
   );
 }
@@ -166,5 +229,21 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 14,
+  },
+  fab: {
+    position: "absolute",
+    right: 20,
+    bottom: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: "#2563EB",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 6,
   },
 });
