@@ -1,9 +1,10 @@
+import axiosInstance from "@/service/axiosInstance";
 import { postProductThunks } from "@/store/slices/product/productThunk";
 import { AppDispatch } from "@/store/store";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { isAxiosError } from "axios";
+import axios, { isAxiosError } from "axios";
 import * as ImagePicker from "expo-image-picker";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Image,
   KeyboardAvoidingView,
@@ -18,11 +19,17 @@ import {
 } from "react-native";
 import { useDispatch } from "react-redux";
 
+type CategoryType = {
+  cat_id: number;
+  cat_name: string;
+};
+
 type PrductType = {
   product_name: string;
   product_description: string;
   product_price: string;
   product_image: string[];
+  category_id: string;
 };
 
 const initailForm: PrductType = {
@@ -30,6 +37,7 @@ const initailForm: PrductType = {
   product_description: "",
   product_price: "",
   product_image: [],
+  category_id: "",
 };
 
 const CreateProduct = () => {
@@ -43,10 +51,29 @@ const CreateProduct = () => {
 
   const [form, setForm] = useState(initailForm);
   const [select, setSelect] = useState("select");
-
-  const options = ["shirt", "pant", "accessory", "hat", "glasses"];
+  const [categories, setCategories] = useState<CategoryType[]>([]);
+  // const options = ["shirt", "pant", "accessory", "hat", "glasses"];
 
   const dispactch = useDispatch<AppDispatch>();
+
+  const fetchCategories = async () => {
+    try {
+      const result = await axios.get(
+        "http://192.168.201.46:9000/api/categories",
+      );
+      setCategories(result.data.data)
+    } catch (error) {
+      if (isAxiosError(error)) {
+        console.error(error.response?.data?.message || error.message);
+      } else {
+        console.error("failed to fetch categories");
+      }
+    }
+  };
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
 
   const setField = (
     name: Exclude<keyof PrductType, "product_image">,
@@ -95,10 +122,11 @@ const CreateProduct = () => {
       product_description: form.product_description,
       product_price: Number(form.product_price.replaceAll(",", "")),
       product_image: form.product_image,
+      category_id: Number(form.category_id),
     };
 
     try {
-      const result = await dispactch(postProductThunks(paylaod)).unwrap();
+      const result = await dispactch(postProductThunks(paylaod))
       console.log(result);
     } catch (error) {
       if (isAxiosError(error)) {
@@ -123,7 +151,9 @@ const CreateProduct = () => {
         </Text>
 
         <View style={styles.row}>
-          <Text style={[styles.label, { color: textColor }]}>Product Name *</Text>
+          <Text style={[styles.label, { color: textColor }]}>
+            Product Name *
+          </Text>
           <TextInput
             style={[styles.field, { backgroundColor: fieldBg }]}
             placeholder="Enter product name"
@@ -150,17 +180,23 @@ const CreateProduct = () => {
             ]}
           >
             <Text style={{ color: fieldTextColor }}>{select}</Text>
-            {open ? <Ionicons name="caret-up" /> : <Ionicons name="caret-down" />}
+            {open ? (
+              <Ionicons name="caret-up" />
+            ) : (
+              <Ionicons name="caret-down" />
+            )}
           </Pressable>
         </View>
         {open && (
           <View style={styles.openCategory}>
-            {options.map((cate) => {
+            {categories.map((cate: CategoryType) => {
               return (
                 <Pressable
-                  key={cate}
+                  key={cate.cat_id}
                   onPress={() => {
-                    return (setOpen(false), setSelect(cate));
+                    return (setOpen(false), 
+                    setSelect(cate.cat_name)),
+                    setField("category_id", String(cate.cat_id))
                   }}
                   style={({ pressed }) => [
                     {
@@ -168,7 +204,7 @@ const CreateProduct = () => {
                     },
                   ]}
                 >
-                  <Text style={{ padding: 10 }}>{cate}</Text>
+                  <Text style={{ padding: 10 }}>{cate.cat_name}</Text>
                 </Pressable>
               );
             })}

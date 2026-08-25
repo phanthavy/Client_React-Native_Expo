@@ -1,6 +1,6 @@
-import axios from "axios";
+import { create } from "axios";
 
-const axiosInstance = axios.create({
+const axiosInstance = create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
   timeout: 10000,
   headers: {

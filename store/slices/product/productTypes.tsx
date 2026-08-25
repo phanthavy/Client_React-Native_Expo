@@ -18,6 +18,7 @@ export type productApi = {
   product_description: string;
   product_price: number;
   product_image: string[] | null;
+  category_id: number | null;
 };
 
 export type productPayload = Omit<productApi, "product_id">;
