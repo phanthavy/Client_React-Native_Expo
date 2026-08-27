@@ -1,8 +1,7 @@
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import {
   FlatList,
   Image,
-  ImageSourcePropType,
   Pressable,
   StyleSheet,
   Text,
@@ -11,57 +10,13 @@ import {
 } from "react-native";
 
 import Ionicons from "@expo/vector-icons/Ionicons";
-
-export type ProductCategory = "all" | "watch" | "shirt" | "bag" | "glasses";
-
-type ProductTypes = {
-  id: number;
-  name: string;
-  price: number;
-  category: Exclude<ProductCategory, "all">;
-  img: ImageSourcePropType;
-};
-
-const products: ProductTypes[] = [
-  {
-    id: 1,
-    name: "Classic Watch",
-    price: 1200,
-    category: "watch",
-    img: require("@/assets/images/watch/watch1.jpg"),
-  },
-  {
-    id: 2,
-    name: "Sport Watch",
-    price: 1999,
-    category: "watch",
-    img: require("@/assets/images/watch/watch2.jpg"),
-  },
-  {
-    id: 3,
-    name: "Dive Watch",
-    price: 1999,
-    category: "watch",
-    img: require("@/assets/images/watch/watch3.webp"),
-  },
-  {
-    id: 4,
-    name: "Leather Bag",
-    price: 1999,
-    category: "shirt",
-    img: require("@/assets/images/shirt/shirt1.avif"),
-  },
-  {
-    id: 5,
-    name: "Formal Shirt",
-    price: 1999,
-    category: "shirt",
-    img: require("@/assets/images/shirt/shirt2.jpg"),
-  },
-];
+import { useDispatch, useSelector } from "react-redux";
+import { AppDispatch, RootState } from "@/store/store";
+import { useCallback } from "react";
+import { getProductThunks } from "@/store/slices/product/productThunk";
 
 type ProductScreenProps = {
-  selectedCategory?: ProductCategory;
+  selectedCategory?: number | "all";
 };
 
 export default function ProductScreen({
@@ -71,13 +26,25 @@ export default function ProductScreen({
   const isDark = colorScheme === "dark";
   const router = useRouter();
 
+  const dispatch = useDispatch<AppDispatch>();
+  const { data, loading, error } = useSelector(
+    (state: RootState) => state.product,
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      dispatch(getProductThunks({ page: 1, pageSize: 20 }));
+    }, [dispatch]),
+  );
+
   const textColor = isDark ? "#F5F5F7" : "#1D1D1F";
   const subtitleColor = isDark ? "#A1A1AA" : "#71717A";
   const cardBg = isDark ? "#2C2C2E" : "#FFFFFF";
+
   const filteredProducts =
     selectedCategory === "all"
-      ? products
-      : products.filter((item) => item.category === selectedCategory);
+      ? data
+      : data?.filter((item) => item.category_id === selectedCategory);
 
   return (
     <View style={{ flex: 1 }}>
@@ -86,7 +53,7 @@ export default function ProductScreen({
         numColumns={2}
         columnWrapperStyle={styles.row}
         showsVerticalScrollIndicator={false}
-        keyExtractor={(item) => item.id.toString()}
+        keyExtractor={(item) => item.product_id.toString()}
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Text style={[styles.emptyTitle, { color: textColor }]}>
@@ -108,7 +75,7 @@ export default function ProductScreen({
                 transform: [{ scale: pressed ? 0.97 : 1 }],
               },
             ]}
-            onPress={() => router.push(`/product/${item.id}`)}
+            onPress={() => router.push(`/product/${item.product_id}`)}
           >
             <Pressable
               style={({ pressed }) => [
@@ -132,16 +99,23 @@ export default function ProductScreen({
             >
               <Ionicons name="heart-outline" size={20} color="#FFFFFF" />
             </Pressable>
-            <Image source={item.img} style={styles.image} />
+            <Image
+              source={
+                item.product_image?.[0]
+                  ? { uri: item.product_image[0] }
+                  : undefined
+              }
+              style={styles.image}
+            />
             <View style={styles.cardBody}>
               <Text
-                style={[styles.productName, { color: textColor }]}
+                style={[styles.productName, { color: textColor, textTransform: 'capitalize' }]}
                 numberOfLines={1}
               >
-                {item.name}
+                {item.product_name}
               </Text>
               <Text style={[styles.productPrice, { color: subtitleColor }]}>
-                ${item.price.toLocaleString()}
+                LAK {item.product_price.toLocaleString()}
               </Text>
             </View>
 

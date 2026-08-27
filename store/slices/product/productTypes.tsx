@@ -1,6 +1,6 @@
 export type productParams = {
   page: number;
-  pageize: number;
+  pageSize: number;
 };
 
 export type productResponse<T> = {

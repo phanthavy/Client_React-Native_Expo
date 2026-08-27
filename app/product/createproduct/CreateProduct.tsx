@@ -1,8 +1,7 @@
-import axiosInstance from "@/service/axiosInstance";
 import { postProductThunks } from "@/store/slices/product/productThunk";
 import { AppDispatch } from "@/store/store";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import axios, { isAxiosError } from "axios";
+import { isAxiosError } from "axios";
 import * as ImagePicker from "expo-image-picker";
 import { useEffect, useState } from "react";
 import {
@@ -18,6 +17,8 @@ import {
   View,
 } from "react-native";
 import { useDispatch } from "react-redux";
+import Toast from "react-native-toast-message";
+import axiosInstance from "@/service/axiosInstance";
 
 type CategoryType = {
   cat_id: number;
@@ -48,20 +49,24 @@ const CreateProduct = () => {
   const fieldTextColor = isDark ? "#57575c" : "#F5F5F7";
 
   const [open, setOpen] = useState(false);
+  const [error, setError] = useState<{
+    product_name?: boolean;
+    product_price?: boolean;
+    product_image?: boolean;
+  }>({});
 
   const [form, setForm] = useState(initailForm);
   const [select, setSelect] = useState("select");
   const [categories, setCategories] = useState<CategoryType[]>([]);
-  // const options = ["shirt", "pant", "accessory", "hat", "glasses"];
 
   const dispactch = useDispatch<AppDispatch>();
 
   const fetchCategories = async () => {
     try {
-      const result = await axios.get(
-        "http://192.168.201.46:9000/api/categories",
-      );
-      setCategories(result.data.data)
+      const result = await axiosInstance.get("/categories");
+      setSelect("select")
+      setCategories(result.data.data);
+      
     } catch (error) {
       if (isAxiosError(error)) {
         console.error(error.response?.data?.message || error.message);
@@ -116,6 +121,22 @@ const CreateProduct = () => {
     }));
   };
 
+  const validate = () => {
+    const newErrors: typeof error = {};
+
+    if (!form.product_name.trim()) newErrors.product_name = true;
+    if (!form.product_price.trim()) newErrors.product_price = true;
+    if (form.product_image.length === 0) newErrors.product_image = true;
+
+    setError(newErrors);
+
+    if (Object.keys(newErrors).length > 0) {
+      Toast.show({ type: "error", text1: "please enter required fields" });
+      return false;
+    }
+    return true;
+  };
+
   const handleSubmit = async () => {
     const paylaod = {
       product_name: form.product_name,
@@ -125,9 +146,14 @@ const CreateProduct = () => {
       category_id: Number(form.category_id),
     };
 
+    if (!validate()) return;
+
     try {
-      const result = await dispactch(postProductThunks(paylaod))
-      console.log(result);
+      await dispactch(postProductThunks(paylaod));
+      setError({})
+      setSelect("select")
+      setForm(initailForm)
+      Toast.show({ type: "success", text1: "created successfully" });
     } catch (error) {
       if (isAxiosError(error)) {
         console.error(error.response?.data?.message || error.message);
@@ -146,46 +172,65 @@ const CreateProduct = () => {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <Text style={[styles.sectionTitle, { color: textColor }]}>
+        <Text
+          style={[styles.sectionTitle, { color: textColor, marginTop: 20 }]}
+        >
           Basic Details
         </Text>
 
         <View style={styles.row}>
-          <Text style={[styles.label, { color: textColor }]}>
-            Product Name *
-          </Text>
-          <TextInput
-            style={[styles.field, { backgroundColor: fieldBg }]}
-            placeholder="Enter product name"
-            placeholderTextColor={isDark ? "#71717A" : "#A1A1AA"}
-            value={form.product_name}
-            onChangeText={(e) => setField("product_name", e)}
-          />
+          <View style={[styles.label, { flexDirection: "row", gap: 5 }]}>
+            <Text style={{ color: textColor }}>Product Name</Text>
+            <Text style={{ color: "red" }}>*</Text>
+          </View>
+          <View style={{ flexDirection: "column", gap: 5 }}>
+            <TextInput
+              style={[styles.field, { backgroundColor: fieldBg }]}
+              placeholder="Enter product name"
+              placeholderTextColor={isDark ? "#71717A" : "#A1A1AA"}
+              value={form.product_name}
+              onChangeText={(e) => setField("product_name", e)}
+            />
+            {error.product_name && (
+              <Text style={{ color: "red", fontSize: 12 }}>Name required</Text>
+            )}
+          </View>
         </View>
 
         <View style={styles.row}>
-          <Text style={[styles.label, { color: textColor }]}>Category *</Text>
-          <Pressable
-            onPress={() => {
-              return setOpen((prev) => !prev);
-            }}
-            style={[
-              styles.field,
-              {
-                backgroundColor: fieldBg,
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "space-between",
-              },
-            ]}
-          >
-            <Text style={{ color: fieldTextColor }}>{select}</Text>
-            {open ? (
-              <Ionicons name="caret-up" />
-            ) : (
-              <Ionicons name="caret-down" />
+          <View style={[styles.label, { flexDirection: "row", gap: 5 }]}>
+            <Text style={{ color: textColor }}>Category</Text>
+            <Text style={{ color: "red" }}>*</Text>
+          </View>
+          <View style={{ flexDirection: "column", gap: 5, flex: 1 }}>
+            <Pressable
+              onPress={() => {
+                return setOpen((prev) => !prev);
+              }}
+              style={[
+                styles.field,
+                {
+                  backgroundColor: fieldBg,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                },
+              ]}
+            >
+              <Text style={{ color: "black" }}>{select}</Text>
+
+              {open ? (
+                <Ionicons name="caret-up" />
+              ) : (
+                <Ionicons name="caret-down" />
+              )}
+            </Pressable>
+            {error.product_name && (
+              <Text style={{ color: "red", fontSize: 12 }}>
+                Category required
+              </Text>
             )}
-          </Pressable>
+          </View>
         </View>
         {open && (
           <View style={styles.openCategory}>
@@ -194,9 +239,10 @@ const CreateProduct = () => {
                 <Pressable
                   key={cate.cat_id}
                   onPress={() => {
-                    return (setOpen(false), 
-                    setSelect(cate.cat_name)),
-                    setField("category_id", String(cate.cat_id))
+                    return (
+                      (setOpen(false), setSelect(cate.cat_name)),
+                      setField("category_id", String(cate.cat_id))
+                    );
                   }}
                   style={({ pressed }) => [
                     {
@@ -204,7 +250,9 @@ const CreateProduct = () => {
                     },
                   ]}
                 >
-                  <Text style={{ padding: 10 }}>{cate.cat_name}</Text>
+                  <Text style={{ padding: 10, color: fieldTextColor }}>
+                    {cate.cat_name}
+                  </Text>
                 </Pressable>
               );
             })}
@@ -223,49 +271,78 @@ const CreateProduct = () => {
           />
         </View>
 
-        <Text style={[styles.sectionTitle, { color: textColor }]}>Price</Text>
+        <Text
+          style={[styles.sectionTitle, { color: textColor, marginTop: 40 }]}
+        >
+          Price
+        </Text>
         <View style={styles.row}>
-          <Text style={[styles.label, { color: textColor }]}>Price ($) *</Text>
-          <TextInput
-            keyboardType="decimal-pad"
-            placeholder="0.000KIP"
-            placeholderTextColor={fieldTextColor}
-            style={[styles.field, { backgroundColor: fieldBg }]}
-            value={form.product_price}
-            onChangeText={(e) => {
-              const numeric = e.replace(/\D/g, "");
-              const formatted = numeric
-                ? Number(numeric).toLocaleString("en-US")
-                : "";
-              return setField("product_price", formatted);
-            }}
-          />
-          <Text style={{ color: textColor }}>KIP</Text>
+          <View style={[styles.label, { flexDirection: "row", gap: 5 }]}>
+            <Text style={{ color: textColor }}>Price</Text>
+            <Text style={{ color: "red" }}>*</Text>
+          </View>
+          <View style={{ flexDirection: "column", gap: 5, flex: 1 }}>
+            <View
+              style={{ flexDirection: "row", gap: 5, alignItems: "center" }}
+            >
+              <TextInput
+                keyboardType="decimal-pad"
+                placeholder="0.000"
+                placeholderTextColor={fieldTextColor}
+                style={[styles.field, { backgroundColor: fieldBg }]}
+                value={form.product_price}
+                onChangeText={(e) => {
+                  const numeric = e.replace(/\D/g, "");
+                  const formatted = numeric
+                    ? Number(numeric).toLocaleString("en-US")
+                    : "";
+                  return setField("product_price", formatted);
+                }}
+              />
+
+              <Text style={{ color: textColor }}>KIP</Text>
+            </View>
+            {error.product_name && (
+              <Text style={{ color: "red", fontSize: 12 }}>Price required</Text>
+            )}
+          </View>
         </View>
 
+        <Text
+          style={[styles.sectionTitle, { color: textColor, marginTop: 40 }]}
+        >
+          Media
+        </Text>
         <View style={styles.imageRow}>
-          <Text style={[styles.label, { color: textColor }]}>Image *</Text>
-          <View style={styles.imageGrid}>
-            {form.product_image.map((img, index) => (
+          <View style={[styles.label, { flexDirection: "row", gap: 5 }]}>
+            <Text style={{ color: textColor }}>Image</Text>
+            <Text style={{ color: "red" }}>*</Text>
+          </View>
+          <View style={{ flex: 1, flexDirection: "column", gap: 5 }}>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+              {form.product_image.map((img, index) => (
+                <Pressable
+                  key={`${index}-${img.slice(0, 24)}`}
+                  onPress={() => removeImage(index)}
+                  style={styles.imageCell}
+                >
+                  <Image source={{ uri: img }} style={styles.imageThumb} />
+                </Pressable>
+              ))}
               <Pressable
-                key={`${index}-${img.slice(0, 24)}`}
-                onPress={() => removeImage(index)}
-                style={styles.imageCell}
+                onPress={pickImage}
+                style={[
+                  styles.imageCell,
+                  styles.addImage,
+                  { backgroundColor: fieldBg },
+                ]}
               >
-                <Image source={{ uri: img }} style={styles.imageThumb} />
+                <Ionicons name="add" size={32} color={fieldTextColor} />
               </Pressable>
-            ))}
-
-            <Pressable
-              onPress={pickImage}
-              style={[
-                styles.imageCell,
-                styles.addImage,
-                { backgroundColor: fieldBg },
-              ]}
-            >
-              <Ionicons name="add" size={32} color={fieldTextColor} />
-            </Pressable>
+            </View>
+            {error.product_image && (
+              <Text style={{ color: "red", fontSize: 12 }}>Image required</Text>
+            )}
           </View>
         </View>
 
@@ -302,7 +379,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 8,
     marginTop: 20,
-    alignItems: "center",
   },
   label: {
     width: 110,
@@ -315,8 +391,8 @@ const styles = StyleSheet.create({
   },
   openCategory: {
     position: "absolute",
-    top: 145,
-    left: 130,
+    top: 178,
+    left: 116,
     right: 20,
     width: 285,
     backgroundColor: "white",

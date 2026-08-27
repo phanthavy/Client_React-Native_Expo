@@ -10,6 +10,7 @@ import { useColorScheme, View } from "react-native";
 import "react-native-reanimated";
 import { useFonts } from "expo-font";
 import Providers from "@/store/provider/Provider";
+import Toast from "react-native-toast-message";
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
@@ -38,6 +39,7 @@ export default function RootLayout() {
           </Stack>
         </View>
         <StatusBar style="auto" />
+        <Toast visibilityTime={1500}/>
       </Providers>
     </ThemeProvider>
   );

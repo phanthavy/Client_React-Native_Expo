@@ -1,5 +1,7 @@
+import axiosInstance from "@/service/axiosInstance";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { useState } from "react";
+import { isAxiosError } from "axios";
+import { useEffect, useState } from "react";
 import {
   FlatList,
   Pressable,
@@ -8,45 +10,69 @@ import {
   useColorScheme,
   View,
 } from "react-native";
-import ProductScreen, { ProductCategory } from "../product";
+import ProductScreen from "../product";
 
-type Category = {
-  id: number;
-  name: string;
-  value: ProductCategory;
-};
-
-const categoryData: Category[] = [
-  { id: 1, name: "All", value: "all" },
-  { id: 2, name: "Shirt", value: "shirt" },
-  { id: 3, name: "Bag", value: "bag" },
-  { id: 4, name: "Watch", value: "watch" },
-  { id: 5, name: "Glasses", value: "glasses" },
-];
-
-const iconMap: Record<string, keyof typeof Ionicons.glyphMap> = {
-  All: "grid-outline",
-  Shirt: "shirt-outline",
-  Bag: "bag-outline",
-  Watch: "watch-outline",
-  Glasses: "glasses-outline",
+type CategoryType = {
+  cat_id: number;
+  cat_name: string;
 };
 
 const HomePage = () => {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
-  const [selectedCategory, setSelectedCategory] = useState<ProductCategory>("all");
 
   const textColor = isDark ? "#F5F5F7" : "#1D1D1F";
   const subtitleColor = isDark ? "#A1A1AA" : "#71717A";
   const iconBg = isDark ? "#3A3A3C" : "#E4E4E7";
 
+  const [categories, setCategories] = useState<CategoryType[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<number | "all">(
+    "all",
+  );
+
+  const iconMap: Record<string, keyof typeof Ionicons.glyphMap> = {
+    all: "grid-outline",
+    shirt: "shirt-outline",
+    pant: "body-outline",
+    watch: "watch-outline",
+    accessories: "bag-outline",
+  };
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const result = await axiosInstance.get("/categories");
+        setCategories(result.data.data ?? []);
+      } catch (error) {
+        if (isAxiosError(error)) {
+          console.error(error.response?.data?.message || error.message);
+        }
+      }
+    };
+    fetchCategories();
+  }, []);
+
+  const categoryData = [
+    { cat_id: 0, cat_name: "all", value: "all" as const },
+    ...categories.map((c) => ({
+      ...c,
+      value: c.cat_id,
+    })),
+  ];
+
   return (
-    <View style={[styles.container, { backgroundColor: isDark ? "#1C1C1E" : "#FAFAFA" }]}>
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: isDark ? "#1C1C1E" : "#FAFAFA" },
+      ]}
+    >
       <View style={styles.sectionHeader}>
         <Text style={[styles.title, { color: textColor }]}>Categories</Text>
         <Pressable>
-          <Text style={[styles.seeAll, { color: isDark ? "#60A5FA" : "#2563EB" }]}>
+          <Text
+            style={[styles.seeAll, { color: isDark ? "#60A5FA" : "#2563EB" }]}
+          >
             See all
           </Text>
         </Pressable>
@@ -56,7 +82,7 @@ const HomePage = () => {
         data={categoryData}
         horizontal
         showsHorizontalScrollIndicator={false}
-        keyExtractor={(item) => item.id.toString()}
+        keyExtractor={(item) => item.cat_id.toString()}
         style={{ flexGrow: 0 }}
         contentContainerStyle={styles.categoryList}
         renderItem={({ item }) => {
@@ -74,7 +100,10 @@ const HomePage = () => {
           return (
             <Pressable
               onPress={() => setSelectedCategory(item.value)}
-              style={({ pressed }) => [styles.category, { opacity: pressed ? 0.7 : 1 }]}
+              style={({ pressed }) => [
+                styles.category,
+                { opacity: pressed ? 0.7 : 1 },
+              ]}
             >
               <View
                 style={[
@@ -85,7 +114,7 @@ const HomePage = () => {
                 ]}
               >
                 <Ionicons
-                  name={iconMap[item.name] ?? "ellipsis-horizontal-outline"}
+                  name={iconMap[item.cat_name] ?? "ellipsis-horizontal-outline"}
                   color={iconColor}
                   size={28}
                 />
@@ -96,7 +125,7 @@ const HomePage = () => {
                   { color: isSelected ? textColor : subtitleColor },
                 ]}
               >
-                {item.name}
+                {item.cat_name}
               </Text>
             </Pressable>
           );
@@ -106,7 +135,9 @@ const HomePage = () => {
       <View style={[styles.sectionHeader, { marginTop: 24 }]}>
         <Text style={[styles.title, { color: textColor }]}>Popular</Text>
         <Pressable>
-          <Text style={[styles.seeAll, { color: isDark ? "#60A5FA" : "#2563EB" }]}>
+          <Text
+            style={[styles.seeAll, { color: isDark ? "#60A5FA" : "#2563EB" }]}
+          >
             See all
           </Text>
         </Pressable>

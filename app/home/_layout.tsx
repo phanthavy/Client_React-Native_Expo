@@ -2,6 +2,30 @@ import { Tabs } from "expo-router";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { StyleSheet, useColorScheme } from "react-native";
 
+export type TabIconProps = {
+  name: keyof typeof Ionicons.glyphMap;
+  color: string;
+  size: number;
+};
+
+export type TabScreenProps = {
+  name: string;
+  title: string;
+  icon: keyof typeof Ionicons.glyphMap;
+};
+
+const TabIcon = ({ name, color, size }: TabIconProps) => {
+  return <Ionicons name={name} size={size} color={color} />;
+};
+
+const TabScreen: TabScreenProps[] = [
+  { name: "index", title: "Home", icon: "home" },
+  { name: "searchs", title: "Searchs", icon: "search" },
+  { name: "carts", title: "Cart", icon: "cart" },
+  { name: "history", title: "History", icon: "time" },
+  { name: "profile", title: "Profile", icon: "person" },
+];
+
 export default function HomeLayout() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
@@ -32,51 +56,18 @@ export default function HomeLayout() {
         },
       }}
     >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: "Home",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="home" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="searchs"
-        options={{
-          title: "Search",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="search" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="carts"
-        options={{
-          title: "Cart",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="cart" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="history"
-        options={{
-          title: "History",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="time" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: "Profile",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person" size={size} color={color} />
-          ),
-        }}
-      />
+      {TabScreen.map(({ name, title, icon }) => (
+        <Tabs.Screen
+          key={name}
+          name={name}
+          options={{
+            title,
+            tabBarIcon: ({ size, color }) => (
+              <TabIcon name={icon} size={size} color={color} />
+            ),
+          }}
+        />
+      ))}
     </Tabs>
   );
 }
